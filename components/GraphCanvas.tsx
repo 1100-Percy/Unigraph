@@ -4,8 +4,6 @@ import React, { useCallback, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
-  addEdge,
-  Connection,
   Edge,
   BackgroundVariant,
   ReactFlowProvider,
@@ -122,8 +120,7 @@ function GraphCanvasContent({
               break;
           }
         }
-      } catch (e) {
-        // Fallback for legacy simple strings
+      } catch {
         label = rawData;
       }
 

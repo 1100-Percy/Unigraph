@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Upload,
   Book,
@@ -17,6 +17,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 // --- Types ---
 type Concept = {
@@ -43,61 +44,95 @@ type Course = {
   lectures: Lecture[];
 };
 
-// --- Mock Data with IDs ---
-const initialLibrary: Course[] = [
-  {
-    id: "course-1",
-    courseName: "Physics 101",
-    lectures: [
-      {
-        id: "lecture-1-1",
-        title: "Lecture 1: Kinematics",
-        modules: [
-          {
-            id: "module-1-1-1",
-            title: "Motion in 1D",
-            concepts: [
-              { id: "concept-1-1-1-1", name: "Velocity", description: "Rate of change of position" },
-              { id: "concept-1-1-1-2", name: "Acceleration", description: "Rate of change of velocity" },
-            ],
-          },
-          {
-            id: "module-1-1-2",
-            title: "Newton's Laws",
-            concepts: [
-              { id: "concept-1-1-2-1", name: "First Law", description: "Inertia" },
-              { id: "concept-1-1-2-2", name: "Second Law", description: "F=ma" },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "course-2",
-    courseName: "Computer Science",
-    lectures: [
-      {
-        id: "lecture-2-1",
-        title: "Lecture 3: Algorithms",
-        modules: [
-          {
-            id: "module-2-1-1",
-            title: "Sorting",
-            concepts: [
-              { id: "concept-2-1-1-1", name: "Bubble Sort", description: "Simple comparison sort" },
-              { id: "concept-2-1-1-2", name: "Quick Sort", description: "Divide and conquer" },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-];
+type UploadedConcept = {
+  name: string;
+  description?: string;
+};
+
+type UploadedModule = {
+  title: string;
+  concepts?: UploadedConcept[];
+};
+
+type LibraryItemDto = {
+  courseId: string;
+  data: unknown;
+  createdAt?: string;
+};
+
+const isCourseLike = (value: unknown): value is Pick<Course, "courseName" | "lectures"> => {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.courseName === "string" && Array.isArray(v.lectures);
+};
+
+const normalizeCourseName = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
 
 export default function Sidebar() {
-  const [library, setLibrary] = useState<Course[]>(initialLibrary);
+  const [library, setLibrary] = useState<Course[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLibrary = async () => {
+      try {
+        const response = await fetch("/api/library/list");
+        if (!response.ok) {
+          if (!cancelled) setLibrary([]);
+          return;
+        }
+
+        const json = (await response.json()) as { items?: unknown };
+        const items = Array.isArray(json.items) ? (json.items as LibraryItemDto[]) : [];
+
+        const courses: Course[] = items
+          .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            if (typeof item.courseId !== "string") return null;
+            if (!isCourseLike(item.data)) return null;
+            return { ...(item.data as object), id: item.courseId } as Course;
+          })
+          .filter(Boolean) as Course[];
+
+        const seen = new Set<string>();
+        const deduped: Course[] = [];
+        for (const course of courses) {
+          const key = normalizeCourseName(course.courseName);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          deduped.push(course);
+        }
+
+        if (!cancelled) setLibrary(deduped);
+      } catch {
+        if (!cancelled) setLibrary([]);
+      }
+    };
+
+    void loadLibrary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const persistCourse = async (course: Course) => {
+    try {
+      const response = await fetch("/api/library/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: course.id, data: course }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save course");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("课程保存失败，刷新后可能会丢失");
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -125,45 +160,55 @@ export default function Sidebar() {
       const result = await response.json();
       const data = result.data; // { courseName, lectureTitle, modules }
 
-      // Update Library State
+      const generateId = () => crypto.randomUUID();
+      const normalizedIncomingCourseName = normalizeCourseName(String(data.courseName ?? ""));
+      const existingCourse = library.find(
+        (c) => normalizeCourseName(c.courseName) === normalizedIncomingCourseName
+      );
+      const courseId = existingCourse?.id ?? generateId();
+
+      const modules = Array.isArray(data.modules) ? (data.modules as UploadedModule[]) : [];
+      const modulesWithIds: Module[] = modules.map((m) => ({
+        id: generateId(),
+        title: m.title,
+        concepts: (Array.isArray(m.concepts) ? m.concepts : []).map((c) => ({
+          id: generateId(),
+          name: c.name,
+          description: c.description ?? "",
+        })),
+      }));
+
+      const newLecture: Lecture = {
+        id: generateId(),
+        title: data.lectureTitle,
+        modules: modulesWithIds,
+      };
+
+      const updatedCourse: Course = existingCourse
+        ? { ...existingCourse, lectures: [...existingCourse.lectures, newLecture] }
+        : { id: courseId, courseName: data.courseName, lectures: [newLecture] };
+
       setLibrary((prev) => {
-        const newLibrary = [...prev];
-        const existingCourseIndex = newLibrary.findIndex(
-          (c) => c.courseName === data.courseName
-        );
-
-        // Helper to generate simple ID
-        const generateId = () => Math.random().toString(36).substr(2, 9);
-
-        // Process modules to add IDs
-        const modulesWithIds = (data.modules || []).map((m: any) => ({
-          ...m,
-          id: generateId(),
-          concepts: (m.concepts || []).map((c: any) => ({
-            ...c,
-            id: generateId(),
-          })),
-        }));
-
-        const newLecture: Lecture = {
-          id: generateId(),
-          title: data.lectureTitle,
-          modules: modulesWithIds,
-        };
-
-        if (existingCourseIndex >= 0) {
-          // Add lecture to existing course
-          newLibrary[existingCourseIndex].lectures.push(newLecture);
-        } else {
-          // Create new course
-          newLibrary.push({
-            id: generateId(),
-            courseName: data.courseName,
-            lectures: [newLecture],
-          });
+        const byIdIndex = prev.findIndex((c) => c.id === courseId);
+        if (byIdIndex >= 0) {
+          const next = [...prev];
+          next[byIdIndex] = updatedCourse;
+          return next;
         }
-        return newLibrary;
+
+        const byNameIndex = prev.findIndex(
+          (c) => normalizeCourseName(c.courseName) === normalizedIncomingCourseName
+        );
+        if (byNameIndex >= 0) {
+          const next = [...prev];
+          next[byNameIndex] = updatedCourse;
+          return next;
+        }
+
+        return [...prev, updatedCourse];
       });
+
+      await persistCourse(updatedCourse);
 
       toast.success("PDF processed and added to library");
     } catch (error) {
@@ -179,21 +224,21 @@ export default function Sidebar() {
   const onDragStart = (
     event: React.DragEvent,
     type: "course" | "lecture" | "module" | "concept",
-    data: any
+    data: Course | Lecture | Module | Concept
   ) => {
     // Unify label field for all types
-    let unifiedData = { ...data };
+    const unifiedData: (Course | Lecture | Module | Concept) & { label?: string } = { ...data };
     
     switch (type) {
       case 'course':
-        unifiedData.label = data.courseName;
+        unifiedData.label = (data as Course).courseName;
         break;
       case 'lecture':
       case 'module':
-        unifiedData.label = data.title;
+        unifiedData.label = (data as Lecture | Module).title;
         break;
       case 'concept':
-        unifiedData.label = data.name;
+        unifiedData.label = (data as Concept).name;
         break;
     }
 
@@ -322,6 +367,20 @@ export default function Sidebar() {
             </AccordionItem>
           ))}
         </Accordion>
+      </div>
+
+      <div className="border-t p-4">
+        <SignedIn>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm font-medium text-slate-700">账号</div>
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="redirect" forceRedirectUrl="/">
+            <Button className="w-full">开始使用</Button>
+          </SignInButton>
+        </SignedOut>
       </div>
     </aside>
   );

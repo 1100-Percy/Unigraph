@@ -6,7 +6,6 @@ import {
   useEdgesState,
   addEdge,
   Connection,
-  Edge,
   Node,
 } from "reactflow";
 import GraphCanvas from "@/components/GraphCanvas";
@@ -24,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 const initialNodes = [
   { id: '1', position: { x: 100, y: 100 }, data: { label: 'Node 1', notes: '' } },
@@ -143,7 +143,7 @@ export default function Home() {
     lastMousePosition.current = null;
   };
 
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNodeId(node.id);
   }, []);
 
@@ -185,67 +185,87 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      {/* Sidebar - Left Column */}
-      <Sidebar />
-
-      {/* Canvas - Right Column */}
-      <main className="flex-1 bg-[#fdfbf7] relative">
-        <GraphCanvas 
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onConnectEnd={onConnectEnd}
-          setNodes={setNodes}
-          onNodeClick={onNodeClick}
-        />
-        
-        {/* Save Button */}
-        <div className="absolute top-4 right-4 z-10">
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save
-              </>
-            )}
-          </Button>
-        </div>
-
-        {menuState.isOpen && (
-          <ConnectionMenu 
-            position={menuState.position}
-            onSelect={handleEdgeTypeSelect}
-            onClose={closeMenu}
-          />
-        )}
-      </main>
-
-      <Sheet open={!!selectedNodeId} onOpenChange={(open) => !open && setSelectedNodeId(null)}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{selectedNode?.data.label || 'Node Details'}</SheetTitle>
-            <SheetDescription>
-              Add your notes and thoughts for this concept.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-6">
-            <Textarea
-              placeholder="Write your notes here..."
-              className="min-h-[200px]"
-              value={selectedNode?.data.notes || ''}
-              onChange={(e) => updateNodeNotes(e.target.value)}
-            />
+    <>
+      <SignedOut>
+        <div className="min-h-screen w-full bg-[#fdfbf7] flex items-center justify-center p-6">
+          <div className="max-w-xl w-full bg-white border rounded-xl p-8 shadow-sm">
+            <h1 className="text-3xl font-bold text-slate-900">Unigraph</h1>
+            <p className="mt-3 text-slate-600">
+              Upload lecture PDFs and build your knowledge graph.
+            </p>
+            <div className="mt-6">
+              <SignInButton mode="redirect" forceRedirectUrl="/">
+                <Button className="w-full">开始使用</Button>
+              </SignInButton>
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+        </div>
+      </SignedOut>
+
+      <SignedIn>
+        <div className="flex h-screen w-full overflow-hidden">
+          <Sidebar />
+
+          <main className="flex-1 bg-[#fdfbf7] relative">
+            <GraphCanvas
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onConnectEnd={onConnectEnd}
+              setNodes={setNodes}
+              onNodeClick={onNodeClick}
+            />
+
+            <div className="absolute top-4 right-4 z-10">
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {menuState.isOpen && (
+              <ConnectionMenu
+                position={menuState.position}
+                onSelect={handleEdgeTypeSelect}
+                onClose={closeMenu}
+              />
+            )}
+          </main>
+
+          <Sheet
+            open={!!selectedNodeId}
+            onOpenChange={(open) => !open && setSelectedNodeId(null)}
+          >
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>{selectedNode?.data.label || "Node Details"}</SheetTitle>
+                <SheetDescription>
+                  Add your notes and thoughts for this concept.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6">
+                <Textarea
+                  placeholder="Write your notes here..."
+                  className="min-h-[200px]"
+                  value={selectedNode?.data.notes || ""}
+                  onChange={(e) => updateNodeNotes(e.target.value)}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </SignedIn>
+    </>
   );
 }

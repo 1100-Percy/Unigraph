@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const pdfParseModule = require('pdf-parse') as typeof import('pdf-parse');
-const PDFParse = pdfParseModule.PDFParse;
+import { auth } from '@clerk/nextjs/server';
+import { PDFParse } from 'pdf-parse';
 
 // Force Node.js runtime to support pdf-parse
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -32,10 +36,6 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Parse PDF text
-    if (!PDFParse) {
-      throw new Error('pdf-parse library not loaded correctly');
-    }
-
     const parser = new PDFParse({ data: buffer });
     let text = '';
     try {

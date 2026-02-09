@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface INode extends Document {
+export interface INode extends Document<string> {
   _id: string; // Override _id to be string (React Flow ID)
+  userId: string;
   position: {
     x: number;
     y: number;
@@ -14,8 +15,14 @@ export interface INode extends Document {
   };
 }
 
+function stripScopedId(scopedId: string) {
+  const separatorIndex = scopedId.indexOf('::');
+  return separatorIndex === -1 ? scopedId : scopedId.slice(separatorIndex + 2);
+}
+
 const NodeSchema: Schema = new Schema({
   _id: { type: String, required: true }, // Explicitly define _id as String
+  userId: { type: String, required: true, index: true },
   position: {
     x: { type: Number, required: true },
     y: { type: Number, required: true },
@@ -33,7 +40,7 @@ NodeSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,
   transform: function (doc, ret) {
-    ret.id = ret._id;
+    ret.id = stripScopedId(String(ret._id));
     delete ret._id;
   },
 });
