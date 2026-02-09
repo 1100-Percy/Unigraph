@@ -1,0 +1,41 @@
+# Unigraph 开发守则 (绝对准则)
+
+你现在是我的高级全栈工程师。我们正在开发一个叫 Unigraph 的知识图谱应用。
+
+## 1. 技术栈限制 (严禁修改)
+- 框架：Next.js 14 (App Router)
+- 语言：TypeScript (不用解释，直接写代码)
+- 样式：Tailwind CSS + Shadcn/UI
+- 图表库：React Flow (核心组件)
+- 图标库：Lucide React
+
+## 2. 你的行为准则
+- **不要一次写完所有功能**：每次只写我要求的一个小组件。
+- **由简入繁**：先用假数据（Mock Data）把界面做出来，最后再对接数据库。
+- **文件结构**：所有新组件都放在 `/components` 文件夹下。
+- **修改代码时**：不要只给我片段，请给我完整的、可以直接复制粘贴的文件内容。
+
+## 3. 核心功能描述
+这是一个让学生上传 PDF，AI 提取知识点，学生在画布上拖拽连线的学习工具。
+
+## 4. 数据模型定义 (Source of Truth)
+**必须严格遵守以下 Mongoose Schema 结构，不要随意更改字段名。**
+
+### Node (节点) - Updated
+- _id: String (必须与 React Flow 的 id 保持一致)
+- position: { x: Number, y: Number }
+- type: String
+- data: {
+    label: String, (注意：Label 现在移到了 data 里面！)
+    notes: String,
+    tags: [String]
+  }
+
+### Edge (连线)
+- source: String (起始节点 ID)
+- target: String (目标节点 ID)
+- type: String (默认为 'customEdge')
+- label: String (连线上的文字，如 "Prerequisite")
+- data: {
+    relation: String (枚举: "Prerequisite", "Complementary", "Constraint", "Evolutionary")
+  }
