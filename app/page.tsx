@@ -11,15 +11,8 @@ import {
 import GraphCanvas from "@/components/GraphCanvas";
 import Sidebar from "@/components/Sidebar";
 import ConnectionMenu from "@/components/ConnectionMenu";
+import InspectorPanel from "@/components/InspectorPanel";
 import { EDGE_TYPES, EdgeTypeKey } from "@/lib/edge-types";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -214,6 +207,7 @@ export default function Home() {
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onConnectEnd={onConnectEnd}
+              onPaneClick={() => setSelectedNodeId(null)}
               setNodes={setNodes}
               onNodeClick={onNodeClick}
             />
@@ -243,27 +237,11 @@ export default function Home() {
             )}
           </main>
 
-          <Sheet
-            open={!!selectedNodeId}
-            onOpenChange={(open) => !open && setSelectedNodeId(null)}
-          >
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>{selectedNode?.data.label || "Node Details"}</SheetTitle>
-                <SheetDescription>
-                  Add your notes and thoughts for this concept.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6">
-                <Textarea
-                  placeholder="Write your notes here..."
-                  className="min-h-[200px]"
-                  value={selectedNode?.data.notes || ""}
-                  onChange={(e) => updateNodeNotes(e.target.value)}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <InspectorPanel
+            selectedNode={selectedNode || null}
+            onClose={() => setSelectedNodeId(null)}
+            onNotesChange={updateNodeNotes}
+          />
         </div>
       </SignedIn>
     </>

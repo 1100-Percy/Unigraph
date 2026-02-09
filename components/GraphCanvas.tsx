@@ -25,6 +25,7 @@ interface GraphCanvasProps {
   onConnect: OnConnect;
   onConnectEnd?: OnConnectEnd;
   onConnectStart?: OnConnectStart;
+  onPaneClick?: () => void;
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   onNodeClick: (event: React.MouseEvent, node: Node) => void;
 }
@@ -37,6 +38,7 @@ function GraphCanvasContent({
   onConnect,
   onConnectEnd,
   onConnectStart,
+  onPaneClick,
   setNodes,
   onNodeClick,
 }: GraphCanvasProps) {
@@ -55,17 +57,18 @@ function GraphCanvasContent({
       const rawData = event.dataTransfer.getData('application/reactflow');
       let label = '';
       let type = 'default';
-      let additionalData = {};
       let nodeStyle = {};
+      let description = '';
+      let descriptionSource: 'pdf' | 'ai' = 'ai';
+      let level = 'concept';
 
       try {
         const parsed = JSON.parse(rawData);
         if (parsed && typeof parsed === 'object') {
           type = parsed.type || 'default';
-          additionalData = { ...parsed.data, sourceType: type };
-          
-          // Use unified label if available, otherwise fallback
           label = parsed.data?.label || 'Unknown Node';
+          description = parsed.data?.description ?? '';
+          descriptionSource = parsed.data?.descriptionSource === 'pdf' ? 'pdf' : 'ai';
 
           // Apply differentiated styling based on type
           switch (type) {
@@ -80,7 +83,7 @@ function GraphCanvasContent({
                 fontWeight: 'bold',
                 padding: '10px',
               };
-              additionalData = { ...additionalData, level: 'course' };
+              level = 'course';
               break;
             case 'lecture':
               nodeStyle = {
@@ -90,7 +93,7 @@ function GraphCanvasContent({
                 padding: '10px',
                 width: 160,
               };
-              additionalData = { ...additionalData, level: 'lecture' };
+              level = 'lecture';
               break;
             case 'module':
               nodeStyle = {
@@ -101,7 +104,7 @@ function GraphCanvasContent({
                 width: 150,
                 fontSize: '12px',
               };
-              additionalData = { ...additionalData, level: 'module' };
+              level = 'module';
               break;
             case 'concept':
               // Default style (white background, thin border)
@@ -113,7 +116,7 @@ function GraphCanvasContent({
                 width: 140,
                 fontSize: '12px',
               };
-              additionalData = { ...additionalData, level: 'concept' };
+              level = 'concept';
               break;
             default:
               // Fallback style
@@ -142,9 +145,11 @@ function GraphCanvasContent({
         position,
         style: nodeStyle,
         data: { 
-          label, 
+          label,
+          level,
+          description,
+          descriptionSource,
           notes: '',
-          ...additionalData 
         },
       };
 
@@ -166,6 +171,7 @@ function GraphCanvasContent({
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         fitView
       >
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />

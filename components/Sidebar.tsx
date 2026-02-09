@@ -24,6 +24,7 @@ type Concept = {
   id: string;
   name: string;
   description: string;
+  descriptionSource?: "pdf" | "ai";
 };
 
 type Module = {
@@ -47,6 +48,10 @@ type Course = {
 type UploadedConcept = {
   name: string;
   description?: string;
+  definition?: {
+    text?: string;
+    source?: "pdf" | "ai";
+  };
 };
 
 type UploadedModule = {
@@ -174,7 +179,8 @@ export default function Sidebar() {
         concepts: (Array.isArray(m.concepts) ? m.concepts : []).map((c) => ({
           id: generateId(),
           name: c.name,
-          description: c.description ?? "",
+          description: c.definition?.text ?? c.description ?? "",
+          descriptionSource: c.definition?.source ?? "ai",
         })),
       }));
 
@@ -226,24 +232,26 @@ export default function Sidebar() {
     type: "course" | "lecture" | "module" | "concept",
     data: Course | Lecture | Module | Concept
   ) => {
-    // Unify label field for all types
-    const unifiedData: (Course | Lecture | Module | Concept) & { label?: string } = { ...data };
-    
+    let label = "";
+    let description = "";
+    let descriptionSource: "pdf" | "ai" = "ai";
+
     switch (type) {
-      case 'course':
-        unifiedData.label = (data as Course).courseName;
+      case "course":
+        label = (data as Course).courseName;
         break;
-      case 'lecture':
-      case 'module':
-        unifiedData.label = (data as Lecture | Module).title;
+      case "lecture":
+      case "module":
+        label = (data as Lecture | Module).title;
         break;
-      case 'concept':
-        unifiedData.label = (data as Concept).name;
+      case "concept":
+        label = (data as Concept).name;
+        description = (data as Concept).description ?? "";
+        descriptionSource = (data as Concept).descriptionSource ?? "ai";
         break;
     }
 
-    // Pass full object with type and unified label
-    const payload = JSON.stringify({ type, data: unifiedData });
+    const payload = JSON.stringify({ type, data: { label, description, descriptionSource } });
     event.dataTransfer.setData("application/reactflow", payload);
     event.dataTransfer.effectAllowed = "copy";
   };
