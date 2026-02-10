@@ -19,22 +19,22 @@ export interface EdgeTypeConfig {
 
 export const EDGE_TYPES: Record<string, EdgeTypeConfig> = {
   PREREQUISITE: {
-    label: "Prerequisite (前置)",
+    label: "Prerequisite",
     style: { stroke: "black" },
     markerEnd: { type: MarkerType.ArrowClosed, color: "black" },
   },
   COMPLEMENTARY: {
-    label: "Complementary (补充)",
+    label: "Complementary",
     style: { stroke: "#888", strokeDasharray: "5,5" },
     markerEnd: undefined,
   },
   CONSTRAINT: {
-    label: "Constraint (约束)",
+    label: "Constraint",
     style: { stroke: "#ef4444" }, // red-500
     markerEnd: undefined,
   },
   EVOLUTIONARY: {
-    label: "Evolutionary (演化)",
+    label: "Evolutionary",
     style: { stroke: "#2563eb", strokeWidth: 3 }, // blue-600
     markerEnd: { type: MarkerType.ArrowClosed, color: "#2563eb" },
   },

@@ -14,7 +14,7 @@ import ConnectionMenu from "@/components/ConnectionMenu";
 import InspectorPanel from "@/components/InspectorPanel";
 import { EDGE_TYPES, EdgeTypeKey } from "@/lib/edge-types";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
@@ -25,11 +25,20 @@ const initialNodes = [
 
 const initialEdges = [{ id: 'e1-2', source: '1', target: '2', type: 'default' }];
 
+const createEdgeId = () => {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `edge_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+};
+
 export default function Home() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Load graph data on mount
   useEffect(() => {
@@ -74,6 +83,7 @@ export default function Home() {
   
   // Store the pending connection params
   const pendingConnection = useRef<Connection | null>(null);
+  const pendingEdgeId = useRef<string | null>(null);
   // Store the last mouse up position
   const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
 
@@ -90,8 +100,23 @@ export default function Home() {
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent) => {
       // Store the position
-      const clientX = 'clientX' in event ? event.clientX : event.touches[0].clientX;
-      const clientY = 'clientY' in event ? event.clientY : event.touches[0].clientY;
+      let clientX: number | null = null;
+      let clientY: number | null = null;
+
+      if ('clientX' in event) {
+        clientX = event.clientX;
+        clientY = event.clientY;
+      } else {
+        const touch = event.changedTouches?.[0] ?? event.touches?.[0] ?? null;
+        if (touch) {
+          clientX = touch.clientX;
+          clientY = touch.clientY;
+        }
+      }
+
+      if (clientX === null || clientY === null) {
+        return;
+      }
       
       lastMousePosition.current = { x: clientX, y: clientY };
       
@@ -105,34 +130,76 @@ export default function Home() {
     (params: Connection) => {
       // Store the connection params
       pendingConnection.current = params;
+      const edgeId = createEdgeId();
+      pendingEdgeId.current = edgeId;
+
+      const defaultConfig = EDGE_TYPES.PREREQUISITE;
+      setEdges((eds) =>
+        addEdge(
+          {
+            id: edgeId,
+            ...params,
+            type: 'default',
+            style: defaultConfig.style,
+            markerEnd: defaultConfig.markerEnd ? { ...defaultConfig.markerEnd } : undefined,
+            animated: false,
+          },
+          eds,
+        ),
+      );
       
       // Try to open menu (in case onConnectEnd fired first)
       tryOpenMenu();
     },
-    [tryOpenMenu],
+    [setEdges, tryOpenMenu],
   );
 
   const handleEdgeTypeSelect = (type: EdgeTypeKey) => {
-    if (pendingConnection.current) {
-      const config = EDGE_TYPES[type];
-      setEdges((eds) => addEdge({
-        ...pendingConnection.current!,
-        type: 'default', // Keep standard edge type but apply styles
-        style: config.style,
-        markerEnd: config.markerEnd ? { ...config.markerEnd } : undefined, // Clone marker config
-        animated: type === 'COMPLEMENTARY', // Optional: animate dashed lines
-      }, eds));
+    const config = EDGE_TYPES[type];
+    const edgeId = pendingEdgeId.current;
+
+    if (edgeId) {
+      setEdges((eds) =>
+        eds.map((edge) =>
+          edge.id === edgeId
+            ? {
+                ...edge,
+                type: 'default',
+                style: config.style,
+                markerEnd: config.markerEnd ? { ...config.markerEnd } : undefined,
+                animated: type === 'COMPLEMENTARY',
+              }
+            : edge,
+        ),
+      );
+    } else if (pendingConnection.current) {
+      const fallbackId = createEdgeId();
+      setEdges((eds) =>
+        addEdge(
+          {
+            id: fallbackId,
+            ...pendingConnection.current!,
+            type: 'default',
+            style: config.style,
+            markerEnd: config.markerEnd ? { ...config.markerEnd } : undefined,
+            animated: type === 'COMPLEMENTARY',
+          },
+          eds,
+        ),
+      );
     }
     
     // Reset state
     setMenuState((prev) => ({ ...prev, isOpen: false }));
     pendingConnection.current = null;
+    pendingEdgeId.current = null;
     lastMousePosition.current = null;
   };
 
   const closeMenu = () => {
     setMenuState((prev) => ({ ...prev, isOpen: false }));
     pendingConnection.current = null;
+    pendingEdgeId.current = null;
     lastMousePosition.current = null;
   };
 
@@ -180,15 +247,15 @@ export default function Home() {
   return (
     <>
       <SignedOut>
-        <div className="min-h-screen w-full bg-[#fdfbf7] flex items-center justify-center p-6">
-          <div className="max-w-xl w-full bg-white border rounded-xl p-8 shadow-sm">
-            <h1 className="text-3xl font-bold text-slate-900">Unigraph</h1>
-            <p className="mt-3 text-slate-600">
+        <div className="min-h-screen w-full bg-[#F2EDE4] flex items-center justify-center p-6">
+          <div className="max-w-xl w-full bg-[#F2EDE4] border rounded-xl p-8 shadow-sm">
+            <h1 className="text-3xl font-bold text-[#402722]">Unigraph</h1>
+            <p className="mt-3 text-[#402722]">
               Upload lecture PDFs and build your knowledge graph.
             </p>
             <div className="mt-6">
               <SignInButton mode="redirect" forceRedirectUrl="/">
-                <Button className="w-full">开始使用</Button>
+                <Button className="w-full">Get Started</Button>
               </SignInButton>
             </div>
           </div>
@@ -197,9 +264,29 @@ export default function Home() {
 
       <SignedIn>
         <div className="flex h-screen w-full overflow-hidden">
-          <Sidebar />
+          <div
+            className={`shrink-0 transition-[width] duration-200 ${
+              isSidebarCollapsed ? "w-0 overflow-hidden pointer-events-none" : "w-80"
+            }`}
+            aria-hidden={isSidebarCollapsed}
+          >
+            <Sidebar onCollapse={() => setIsSidebarCollapsed(true)} />
+          </div>
 
-          <main className="flex-1 bg-[#fdfbf7] relative">
+          <main className="flex-1 bg-[#F2EDE4] relative">
+            {isSidebarCollapsed && (
+              <div className="absolute top-4 left-4 z-10">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsSidebarCollapsed(false)}
+                  aria-label="Expand sidebar"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             <GraphCanvas
               nodes={nodes}
               edges={edges}

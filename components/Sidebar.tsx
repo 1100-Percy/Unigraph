@@ -8,6 +8,7 @@ import {
   Folder,
   GripVertical,
   Loader2,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,7 +74,11 @@ const isCourseLike = (value: unknown): value is Pick<Course, "courseName" | "lec
 
 const normalizeCourseName = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
 
-export default function Sidebar() {
+type SidebarProps = {
+  onCollapse?: () => void;
+};
+
+export default function Sidebar({ onCollapse }: SidebarProps) {
   const [library, setLibrary] = useState<Course[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -135,7 +140,7 @@ export default function Sidebar() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("课程保存失败，刷新后可能会丢失");
+      toast.error("Failed to save course. It may be lost after refresh.");
     }
   };
 
@@ -260,7 +265,20 @@ export default function Sidebar() {
     <aside className="w-80 h-full bg-white border-r flex flex-col shadow-sm z-20">
       {/* Header & Upload */}
       <div className="p-4 border-b space-y-4">
-        <h1 className="text-xl font-bold text-gray-800">Unigraph Library</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold text-[#402722]">Unigraph Library</h1>
+          {onCollapse && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onCollapse}
+              aria-label="Collapse sidebar"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         <div className="relative">
           <input
             type="file"
@@ -300,7 +318,7 @@ export default function Sidebar() {
                 onDragStart={(e) => onDragStart(e, "course", course)}
                 className="cursor-grab active:cursor-grabbing"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-[#F2EDE4] text-[#402722] hover:bg-[#F2EDE4] transition-colors">
                   <div className="flex items-center gap-2">
                     <Book className="h-4 w-4" />
                     <span className="font-bold text-sm text-left">
@@ -309,7 +327,7 @@ export default function Sidebar() {
                   </div>
                 </AccordionTrigger>
               </div>
-              <AccordionContent className="bg-slate-50">
+              <AccordionContent className="bg-[#F2EDE4]">
                 {/* Layer 2: Lecture (Nested Accordion Multiple) */}
                 <Accordion type="multiple" className="w-full">
                   {course.lectures.map((lecture) => (
@@ -323,8 +341,8 @@ export default function Sidebar() {
                         onDragStart={(e) => onDragStart(e, "lecture", lecture)}
                         className="cursor-grab active:cursor-grabbing"
                       >
-                        <AccordionTrigger className="px-4 py-2 hover:no-underline hover:bg-slate-100 pl-4 border-l-4 border-transparent hover:border-slate-300 transition-all">
-                          <div className="flex items-center gap-2 text-slate-700">
+                        <AccordionTrigger className="px-4 py-2 hover:no-underline hover:bg-[#F2EDE4] pl-4 border-l-4 border-transparent hover:border-slate-300 transition-all">
+                          <div className="flex items-center gap-2 text-[#402722]">
                             <FileText className="h-4 w-4" />
                             <span className="text-sm font-medium text-left">
                               {lecture.title}
@@ -341,7 +359,7 @@ export default function Sidebar() {
                             >
                               {/* Layer 3: Module Header */}
                               <div
-                                className="flex items-center gap-2 px-4 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider pl-8 border-l border-slate-200 ml-4 mb-1 cursor-grab active:cursor-grabbing hover:text-slate-800 transition-colors"
+                                className="flex items-center gap-2 px-4 py-1 text-xs font-semibold text-[#402722] uppercase tracking-wider pl-8 border-l border-slate-200 ml-4 mb-1 cursor-grab active:cursor-grabbing transition-colors"
                                 draggable
                                 onDragStart={(e) => onDragStart(e, "module", module)}
                               >
@@ -355,11 +373,11 @@ export default function Sidebar() {
                                 {module.concepts.map((concept) => (
                                   <div
                                     key={concept.id}
-                                    className="group/concept flex items-center gap-2 py-1 px-2 rounded hover:bg-white hover:shadow-sm cursor-grab active:cursor-grabbing text-sm text-slate-600 transition-all border border-transparent hover:border-slate-200"
+                                    className="group/concept flex items-center gap-2 py-1 px-2 rounded hover:bg-[#F2EDE4] hover:shadow-sm cursor-grab active:cursor-grabbing text-sm text-[#402722] transition-all border border-transparent hover:border-slate-200"
                                     draggable
                                     onDragStart={(e) => onDragStart(e, "concept", concept)}
                                   >
-                                    <GripVertical className="h-3 w-3 text-slate-300 opacity-0 group-hover/concept:opacity-100 transition-opacity" />
+                                    <GripVertical className="h-3 w-3 text-[#402722] opacity-0 group-hover/concept:opacity-100 transition-opacity" />
                                     <span>{concept.name}</span>
                                   </div>
                                 ))}
@@ -380,13 +398,13 @@ export default function Sidebar() {
       <div className="border-t p-4">
         <SignedIn>
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-medium text-slate-700">账号</div>
+            <div className="text-sm font-medium text-[#402722]">Account</div>
             <UserButton afterSignOutUrl="/" />
           </div>
         </SignedIn>
         <SignedOut>
           <SignInButton mode="redirect" forceRedirectUrl="/">
-            <Button className="w-full">开始使用</Button>
+            <Button className="w-full">Get Started</Button>
           </SignInButton>
         </SignedOut>
       </div>

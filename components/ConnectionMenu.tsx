@@ -21,7 +21,7 @@ export default function ConnectionMenu({
       />
       
       <div
-        className="fixed z-50 flex flex-col gap-1 rounded-md border bg-white p-1 shadow-md"
+        className="fixed z-50 flex flex-col gap-1 rounded-md border bg-[#F2EDE4] p-1 shadow-md text-[#402722]"
         style={{
           left: position.x,
           top: position.y,
@@ -30,7 +30,7 @@ export default function ConnectionMenu({
         {Object.entries(EDGE_TYPES).map(([key, config]) => (
           <button
             key={key}
-            className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-100 text-left"
+            className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-[#F2EDE4] text-left"
             onClick={() => onSelect(key as EdgeTypeKey)}
           >
             <div

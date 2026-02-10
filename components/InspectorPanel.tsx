@@ -53,7 +53,7 @@ export default function InspectorPanel({ selectedNode, onClose, onNotesChange }:
             {description ? (
               <div className="text-sm leading-relaxed text-foreground">{description}</div>
             ) : (
-              <div className="text-sm text-muted-foreground">暂无 AI 定义</div>
+              <div className="text-sm text-muted-foreground">No AI definition yet</div>
             )}
           </section>
 

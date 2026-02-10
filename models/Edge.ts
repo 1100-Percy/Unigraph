@@ -7,6 +7,11 @@ export interface IEdge extends Document<string> {
   target: string;
   type: string;
   label?: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  animated?: boolean;
+  style?: Record<string, unknown>;
+  markerEnd?: Record<string, unknown>;
 }
 
 function stripScopedId(scopedId: string) {
@@ -24,13 +29,18 @@ const EdgeSchema: Schema = new Schema({
     required: true,
   },
   label: { type: String },
+  sourceHandle: { type: String },
+  targetHandle: { type: String },
+  animated: { type: Boolean },
+  style: { type: Schema.Types.Mixed },
+  markerEnd: { type: Schema.Types.Mixed },
 });
 
 // Configure toJSON to handle ID transformation for React Flow
 EdgeSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,
-  transform: function (doc, ret) {
+  transform: function (_doc, ret) {
     ret.id = stripScopedId(String(ret._id));
     delete ret._id;
   },
