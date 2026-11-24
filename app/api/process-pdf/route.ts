@@ -131,27 +131,23 @@ export async function POST(request: Request) {
       messages: [
         {
           role: 'system',
-          content: `你是一位专业的课程架构师。你的任务是从杂乱的讲义文本中重构出清晰的知识树。
-第一步：（提取层级）首先识别课程名和当前讲座主题。
-第二步：（归纳模块）分析文本的逻辑流。如果没有明确的章节标题，请根据内容语义，将知识点归类到 3-5 个“核心模块”中。不要创建“其他”或“杂项”这种模块，必须赋予有意义的概括性标题。
-第三步：（提取概念）在第二步创建的每个模块下，提取 文件中的原子知识点（Concepts/algorithms/formula and so on）。
-第四步：（根据课件解释）每个 Concept 的 description 用 2-4 句连贯、易懂的话，解释这个概念的含义，以及课件中与它相关的知识点，例如原理、用途、使用方式、与其他概念的关系或课件中的例子。只解释提供的课件能够支持的内容，不要补充课件没有讲到的结论；如果课件只提及名称而没有展开，明确说明课件未详细解释。不要用目录、学习目标（如“To distinguish...”）或零散原句代替概念解释。解释语言与课件正文一致，保留原有专业术语。
-注意：保持原意：模块标题最好引用原文，如果原文没有，则进行高层次的总结。
-注意：Concept 的 name 尽量使用原文中出现过的术语/短语（能逐字对应最好），避免自己发明新词。
-你必须返回严格的 **JSON** 格式（JSON Format）格式如下：{
-  "courseName": string, // 课程名称（如“计算机组成原理”）
-  "lectureTitle": string, // 本次课的主题（如“Lecture 3: 流水线技术”）
-  "modules": [ // 核心模块（如果文中没有显式标题，请 AI 归纳总结）
-    {
-      "title": string, // 模块名（如“流水线冒险处理”）
-      "concepts": [ // 该模块下的具体知识点
-        {
-          "name": string, // 概念名（如“数据冒险”）
-          "description": string // 根据课件解释概念及相关知识点，2-4 句
-        }
-      ]
-    }
-  ]
+          content: `You are a course architect organizing lecture material into a clear knowledge tree for an English-language learning app.
+All output must be in English, regardless of the language of the lecture. This applies to courseName, lectureTitle, every module title, every concept name, and every description. Translate non-English terms into standard English terminology while preserving course codes, API identifiers, formulas, and proper names.
+1. Identify the course and the lecture topic.
+2. Group the material into 3-5 meaningful core modules based on its structure and meaning. Use specific titles, not "Other" or "Miscellaneous". Preserve the meaning of the original headings.
+3. Extract the atomic concepts, algorithms, and formulas taught in each module. Prefer the original English technical terms or their standard English translations; do not invent concepts.
+4. For each concept, write a clear explanation of 2-4 connected English sentences grounded in the supplied lecture. Explain its meaning and relevant knowledge covered by the slides, such as its principles, purpose, use, relationships, or an example. Do not add claims that the lecture does not support. If the slides only mention a concept without explaining it, explicitly say that the lecture does not explain it in detail. Do not substitute a table of contents, a learning objective such as "To distinguish...", or disconnected quotations for an explanation.
+Return only valid JSON with this structure:
+{
+  "courseName": "Course name in English",
+  "lectureTitle": "Lecture topic in English",
+  "modules": [{
+    "title": "Module title in English",
+    "concepts": [{
+      "name": "Concept name in English",
+      "description": "An explanation of 2-4 English sentences based on the lecture."
+    }]
+  }]
 }`,
         },
         {
@@ -174,8 +170,8 @@ export async function POST(request: Request) {
     }
 
     // Structure fallback to prevent frontend crashes
-    if (!result.courseName) result.courseName = "未命名课程";
-    if (!result.lectureTitle) result.lectureTitle = "未命名主题";
+    if (!result.courseName) result.courseName = "Untitled Course";
+    if (!result.lectureTitle) result.lectureTitle = "Untitled Lecture";
     if (!Array.isArray(result.modules)) result.modules = [];
 
     const modules = result.modules as AiModule[];
