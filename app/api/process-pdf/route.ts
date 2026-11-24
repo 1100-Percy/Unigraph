@@ -158,7 +158,8 @@ export async function POST(request: Request) {
           content: text,
         },
       ],
-      model: 'deepseek-chat',
+      model: 'deepseek-flash',
+      reasoning_effort: 'none',
       response_format: { type: 'json_object' },
     });
 
