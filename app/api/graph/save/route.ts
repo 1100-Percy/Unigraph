@@ -21,7 +21,6 @@ export async function POST(request: Request) {
     await connectToDatabase();
     
     const body = await request.json();
-    console.log('前端传来的数据:', body);
     const { nodes, edges } = body as { nodes?: unknown; edges?: unknown };
 
     // Transaction-like logic: clear old data first
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Graph saved successfully' });
   } catch (error) {
-    console.error('MongoDB 保存报错:', error);
+    console.error('Failed to save graph:', error);
     // Return the actual error message for easier debugging
     return NextResponse.json(
       { success: false, message: `Failed to save graph: ${error}` },
