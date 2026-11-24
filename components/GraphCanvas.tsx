@@ -2,12 +2,11 @@
 
 import React, { useCallback, useRef } from 'react';
 import ReactFlow, {
-  Background,
   Controls,
   Edge,
-  BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
+  useViewport,
   Node,
   OnNodesChange,
   OnEdgesChange,
@@ -18,6 +17,24 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 const fitViewOptions = { padding: 0.2, maxZoom: 1 };
+
+function DotBackground() {
+  const { x, y, zoom } = useViewport();
+  const gap = 12 * zoom;
+  const radius = zoom / 2;
+
+  return (
+    <div
+      aria-hidden="true"
+      className="react-flow__background pointer-events-none absolute inset-0"
+      style={{
+        backgroundImage: `radial-gradient(circle, #91919a ${radius}px, transparent ${radius}px)`,
+        backgroundSize: `${gap}px ${gap}px`,
+        backgroundPosition: `${x % gap}px ${y % gap}px`,
+      }}
+    />
+  );
+}
 
 interface GraphCanvasProps {
   nodes: Node[];
@@ -177,7 +194,7 @@ function GraphCanvasContent({
         fitView
         fitViewOptions={fitViewOptions}
       >
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        <DotBackground />
         <Controls fitViewOptions={fitViewOptions} />
       </ReactFlow>
     </div>
