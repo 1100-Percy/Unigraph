@@ -135,6 +135,7 @@ export async function POST(request: Request) {
 第一步：（提取层级）首先识别课程名和当前讲座主题。
 第二步：（归纳模块）分析文本的逻辑流。如果没有明确的章节标题，请根据内容语义，将知识点归类到 3-5 个“核心模块”中。不要创建“其他”或“杂项”这种模块，必须赋予有意义的概括性标题。
 第三步：（提取概念）在第二步创建的每个模块下，提取 文件中的原子知识点（Concepts/algorithms/formula and so on）。
+第四步：（根据课件解释）每个 Concept 的 description 用 2-4 句连贯、易懂的话，解释这个概念的含义，以及课件中与它相关的知识点，例如原理、用途、使用方式、与其他概念的关系或课件中的例子。只解释提供的课件能够支持的内容，不要补充课件没有讲到的结论；如果课件只提及名称而没有展开，明确说明课件未详细解释。不要用目录、学习目标（如“To distinguish...”）或零散原句代替概念解释。解释语言与课件正文一致，保留原有专业术语。
 注意：保持原意：模块标题最好引用原文，如果原文没有，则进行高层次的总结。
 注意：Concept 的 name 尽量使用原文中出现过的术语/短语（能逐字对应最好），避免自己发明新词。
 你必须返回严格的 **JSON** 格式（JSON Format）格式如下：{
@@ -146,7 +147,7 @@ export async function POST(request: Request) {
       "concepts": [ // 该模块下的具体知识点
         {
           "name": string, // 概念名（如“数据冒险”）
-          "description": string // 一句话解释
+          "description": string // 根据课件解释概念及相关知识点，2-4 句
         }
       ]
     }
@@ -188,19 +189,14 @@ export async function POST(request: Request) {
           typeof concept.description === 'string' ? concept.description : normalizeTerm(concept.description);
         const evidence = name ? extractQuoteEvidence(text, name) : null;
 
-        if (evidence) {
-          (concept as Record<string, unknown>).definition = {
-            text: evidence.quote,
-            source: 'pdf',
+        (concept as Record<string, unknown>).definition = {
+          text: description,
+          source: 'ai',
+          ...(evidence ? {
             sourceQuote: evidence.quote,
             sourceLocation: { start: evidence.start, end: evidence.end },
-          };
-        } else {
-          (concept as Record<string, unknown>).definition = {
-            text: description,
-            source: 'ai',
-          };
-        }
+          } : {}),
+        };
       }
 
       (mod as Record<string, unknown>).concepts = concepts;

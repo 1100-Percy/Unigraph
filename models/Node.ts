@@ -11,6 +11,9 @@ export interface INode extends Document<string> {
   style?: Record<string, unknown>;
   data: {
     label: string; // Moved inside data
+    level?: string;
+    description?: string;
+    descriptionSource?: 'pdf' | 'ai';
     notes: string;
     tags: string[];
   };
@@ -32,6 +35,9 @@ const NodeSchema: Schema = new Schema({
   style: { type: Schema.Types.Mixed },
   data: {
     label: { type: String, required: true }, // Required label inside data
+    level: { type: String },
+    description: { type: String, default: '' },
+    descriptionSource: { type: String, enum: ['pdf', 'ai'], default: 'ai' },
     notes: { type: String, default: '' },
     tags: { type: [String], default: [] },
   },
