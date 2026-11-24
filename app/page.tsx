@@ -38,6 +38,7 @@ export default function Home() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGraphLoaded, setIsGraphLoaded] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Load graph data on mount
@@ -66,6 +67,8 @@ export default function Home() {
       } catch (error) {
         console.error('Failed to load graph:', error);
         toast.error('Failed to load graph data');
+      } finally {
+        setIsGraphLoaded(true);
       }
     };
 
@@ -273,7 +276,7 @@ export default function Home() {
             <Sidebar onCollapse={() => setIsSidebarCollapsed(true)} />
           </div>
 
-          <main className="flex-1 bg-[#F2EDE4] relative">
+          <main className="min-w-0 flex-1 overflow-hidden bg-[#F2EDE4] relative">
             {isSidebarCollapsed && (
               <div className="absolute top-4 left-4 z-10">
                 <Button
@@ -287,7 +290,7 @@ export default function Home() {
                 </Button>
               </div>
             )}
-            <GraphCanvas
+            {isGraphLoaded ? <GraphCanvas
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
@@ -297,7 +300,11 @@ export default function Home() {
               onPaneClick={() => setSelectedNodeId(null)}
               setNodes={setNodes}
               onNodeClick={onNodeClick}
-            />
+            /> : (
+              <div className="flex h-full items-center justify-center" role="status" aria-label="Loading graph">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            )}
 
             <div className="absolute top-4 right-4 z-10">
               <Button onClick={handleSave} disabled={isSaving}>

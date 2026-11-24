@@ -17,6 +17,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
+const fitViewOptions = { padding: 0.2, maxZoom: 1 };
+
 interface GraphCanvasProps {
   nodes: Node[];
   edges: Edge[];
@@ -159,7 +161,7 @@ function GraphCanvasContent({
   );
 
   return (
-    <div className="h-full w-full" ref={reactFlowWrapper}>
+    <div className="h-full w-full min-w-0 overflow-hidden" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -173,9 +175,10 @@ function GraphCanvasContent({
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         fitView
+        fitViewOptions={fitViewOptions}
       >
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-        <Controls />
+        <Controls fitViewOptions={fitViewOptions} />
       </ReactFlow>
     </div>
   );

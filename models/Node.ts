@@ -8,6 +8,7 @@ export interface INode extends Document<string> {
     y: number;
   };
   type: string;
+  style?: Record<string, unknown>;
   data: {
     label: string; // Moved inside data
     notes: string;
@@ -28,6 +29,7 @@ const NodeSchema: Schema = new Schema({
     y: { type: Number, required: true },
   },
   type: { type: String, default: 'customNode' },
+  style: { type: Schema.Types.Mixed },
   data: {
     label: { type: String, required: true }, // Required label inside data
     notes: { type: String, default: '' },
